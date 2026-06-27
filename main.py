@@ -11,7 +11,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ Yuklanmoqda...")
-
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
