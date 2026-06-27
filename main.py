@@ -1,32 +1,17 @@
-import asyncio
 import os
-import yt_dlp
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import BOT_TOKEN
 
 
-# 📥 video yuklash funksiyasi
-def download_video(url):
-    ydl_opts = {
-        "format": "best[ext=mp4]/best",
-        "outtmpl": "video.mp4",
-        "quiet": True
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-
-
-# 🚀 /start
+# 🚀 START
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
         [
             InlineKeyboardButton(
-                "📢 Obuna bo‘lish",
+                "📢 Instagramga obuna bo‘lish",
                 url="https://instagram.com/javohir.ftbl"
             )
         ]
@@ -35,45 +20,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "🤖 Javohirbekning InstaTik Video Downloader boti\n\n"
-        "📥 Instagram / TikTok / YouTube link yuboring\n"
-        "⚡ Men videoni yuklab beraman\n\n"
-        "👉 Davom etish uchun obuna bo‘ling",
+        "🤖 Javohirbekning InstaTik Video Downloader boti ishlayapti ✅\n\n"
+        "📌 Bot hozir faol holatda\n"
+        "📥 Video yuklash funksiyasi tez orada qo‘shiladi\n\n"
+        "👉 Davom etish uchun Instagramga obuna bo‘ling",
         reply_markup=reply_markup
     )
 
 
-# 📥 video handler
-async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = update.message.text
-
-    await update.message.reply_text("⏳ Video yuklanmoqda...")
-
-    try:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, download_video, url)
-
-        if not os.path.exists("video.mp4"):
-            await update.message.reply_text("❌ Video topilmadi yoki link ishlamaydi")
-            return
-
-        with open("video.mp4", "rb") as video:
-            await update.message.reply_video(video=video)
-
-        os.remove("video.mp4")
-
-    except Exception as e:
-        await update.message.reply_text(f"❌ Xatolik: {e}")
-
-
-# 🔥 main
+# 🔥 MAIN
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download))
 
-    print("Javohirbek bot ishlayapti...")
+    print("Bot ishlayapti...")
 
     app.run_polling()
 
