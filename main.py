@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("8787348134:AAFNAot8sCUcXfvibh-4kDrHjzRAWu2u5jQ")
 
-print("TOKEN =", BOT_TOKEN)
+print("TOKEN =",8787348134:AAFNAot8sCUcXfvibh-4kDrHjzRAWu2u5jQ)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("START TRIGGERED")
