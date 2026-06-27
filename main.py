@@ -11,14 +11,14 @@ CHANNEL = "@xushboqovblog"
 
 logging.basicConfig(level=logging.INFO)
 
-# ⚠️ TOKEN yo‘qligini tekshirish (MUHIM)
 if not TOKEN:
-    raise ValueError("BOT_TOKEN environment variable topilmadi!")
+    raise ValueError("BOT_TOKEN topilmadi!")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
+# 🔥 kanal tekshirish
 async def is_subscribed(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
@@ -27,13 +27,20 @@ async def is_subscribed(user_id: int) -> bool:
         return False
 
 
+# 🔥 subscribe keyboard
 def subscribe_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="📢 Kanalga obuna bo‘lish",
-                    url=f"https://t.me/{CHANNEL.replace('@','')}"
+                    text="📢 Telegram kanal",
+                    url="https://t.me/xushboqovblog"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📸 Instagram",
+                    url="https://instagram.com/javohir.ftbl"
                 )
             ],
             [
@@ -46,6 +53,7 @@ def subscribe_keyboard():
     )
 
 
+# 🔥 video / social keyboard
 def social_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -62,42 +70,59 @@ def social_keyboard():
     )
 
 
+# 🔥 start
 @dp.message(CommandStart())
 async def start(message: types.Message):
     user_id = message.from_user.id
 
     if not await is_subscribed(user_id):
         await message.answer(
-            "❗ Botdan foydalanish uchun avval kanalga obuna bo‘ling:",
+            "👋 Salom!\n\n"
+            "Botdan foydalanish uchun obuna bo‘ling:\n\n"
+            "📢 Telegram kanal\n"
+            "📸 Instagram\n\n"
+            "Keyin 🔄 Tekshirish bosing.",
             reply_markup=subscribe_keyboard()
         )
         return
 
     await message.answer(
-        "✅ Xush kelibsiz!\nQuyidagi videolarni ochishingiz mumkin:",
-        reply_markup=social_keyboard()
+        "✅ Obuna tasdiqlandi!\n\n"
+        "🎬 Endi video havola yuboring:"
     )
 
 
+# 🔥 check subscription
 @dp.callback_query(lambda c: c.data == "check_sub")
 async def check_subscription(callback: types.CallbackQuery):
     user_id = callback.from_user.id
 
     if await is_subscribed(user_id):
         await callback.message.edit_text(
-            "✅ Obuna tasdiqlandi!\nEndi videolarni ochishingiz mumkin:",
-            reply_markup=social_keyboard()
+            "✅ Tasdiqlandingiz!\n\n🎬 Endi video link yuboring."
         )
     else:
-        await callback.answer("❌ Siz hali kanalga obuna bo‘lmagansiz!", show_alert=True)
+        await callback.answer(
+            "❌ Avval kanalga obuna bo‘ling!",
+            show_alert=True
+        )
 
 
+# 🔥 video handler
+@dp.message()
+async def video_handler(message: types.Message):
+    if "http" in (message.text or ""):
+        await message.answer(
+            "🎬 Video qabul qilindi!\n\n"
+            f"📎 Link: {message.text}"
+        )
+
+
+# 🔥 main
 async def main():
     logging.info("Bot ishga tushdi...")
 
-    # 🔥 MUHIM FIX (Telegram conflict yechimi)
     await bot.delete_webhook(drop_pending_updates=True)
-
     await dp.start_polling(bot)
 
 
