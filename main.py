@@ -3,7 +3,7 @@ import logging
 import os
 import yt_dlp
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 
@@ -12,17 +12,15 @@ CHANNEL = "@xushboqovblog"
 
 logging.basicConfig(level=logging.INFO)
 
-if not TOKEN:
-    raise ValueError("BOT_TOKEN yo‘q!")
-
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# saqlangan video path
+user_files = {}
 
-# -----------------------
-# 🔥 OBUNA TEKSHIRISH
-# -----------------------
-async def is_subscribed(user_id: int) -> bool:
+
+# ---------------- OBUNA ----------------
+async def is_subscribed(user_id: int):
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
         return member.status in ["member", "administrator", "creator"]
@@ -30,131 +28,119 @@ async def is_subscribed(user_id: int) -> bool:
         return False
 
 
-# -----------------------
-# 🔥 OBUNA MENU
-# -----------------------
-def subscribe_keyboard():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📢 Telegram kanal",
-                    url="https://t.me/xushboqovblog"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="📸 Instagram",
-                    url="https://instagram.com/javohir.ftbl"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🔄 Tekshirish",
-                    callback_data="check"
-                )
-            ]
-        ]
-    )
+def sub_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton("📢 Kanal", url="https://t.me/xushboqovblog")],
+        [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/javohir.ftbl")],
+        [InlineKeyboardButton("🔄 Tekshirish", callback_data="check")]
+    ])
 
 
-# -----------------------
-# 🔥 START
-# -----------------------
-@dp.message(CommandStart())
-async def start(message: types.Message):
-    user_id = message.from_user.id
-
-    if not await is_subscribed(user_id):
-        await message.answer(
-            "👋 Salom!\n\n"
-            "Botdan foydalanish uchun obuna bo‘ling:\n"
-            "📢 Telegram kanal\n📸 Instagram\n\n"
-            "Keyin 🔄 Tekshirish bosing.",
-            reply_markup=subscribe_keyboard()
-        )
-        return
-
-    await message.answer(
-        "✅ Tabriklayman!\n\n📎 Video link yuboring (YouTube / TikTok / Instagram)"
-    )
-
-
-# -----------------------
-# 🔥 CHECK SUB
-# -----------------------
-@dp.callback_query(lambda c: c.data == "check")
-async def check(callback: types.CallbackQuery):
-    if await is_subscribed(callback.from_user.id):
-        await callback.message.edit_text(
-            "✅ Tasdiqlandingiz!\n\n📎 Endi video link yuboring"
-        )
-    else:
-        await callback.answer("❌ Avval obuna bo‘ling!", show_alert=True)
-
-
-# -----------------------
-# 🔥 VIDEO DOWNLOAD
-# -----------------------
+# ---------------- DOWNLOAD ----------------
 def download_video(url: str):
     os.makedirs("downloads", exist_ok=True)
 
     ydl_opts = {
-        "format": "bestvideo+bestaudio/best",
+        "format": "bv*+ba/best",
         "merge_output_format": "mp4",
-        "outtmpl": "downloads/video.%(ext)s",
+        "outtmpl": "downloads/%(id)s.%(ext)s",
         "quiet": True,
         "noplaylist": True
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        info = ydl.extract_info(url, download=True)
+        file_path = ydl.prepare_filename(info)
 
-    for f in os.listdir("downloads"):
-        if f.endswith(".mp4"):
-            return os.path.join("downloads", f)
-
-    return None
+    return file_path
 
 
-# -----------------------
-# 🔥 VIDEO HANDLER
-# -----------------------
-@dp.message()
-async def handle_video(message: types.Message):
-    url = message.text
+def extract_audio(video_path: str):
+    audio_path = video_path.replace(".mp4", ".mp3")
 
-    if not url or "http" not in url:
+    os.system(f'ffmpeg -y -i "{video_path}" -q:a 0 -map a "{audio_path}"')
+
+    return audio_path
+
+
+# ---------------- START ----------------
+@dp.message(CommandStart())
+async def start(msg: types.Message):
+    if not await is_subscribed(msg.from_user.id):
+        await msg.answer("📢 Avval obuna bo‘ling", reply_markup=sub_kb())
         return
 
-    await message.answer("⬇️ Video yuklanmoqda...")
+    await msg.answer("📎 Video link yuboring")
+
+
+# ---------------- CHECK ----------------
+@dp.callback_query(F.data == "check")
+async def check(cb: types.CallbackQuery):
+    if await is_subscribed(cb.from_user.id):
+        await cb.message.edit_text("📎 Endi link yuboring")
+    else:
+        await cb.answer("❌ Obuna yo‘q", show_alert=True)
+
+
+# ---------------- VIDEO ----------------
+@dp.message(F.text)
+async def handle(msg: types.Message):
+    url = msg.text
+
+    if "http" not in url:
+        return
+
+    await msg.answer("⬇️ Yuklanmoqda...")
 
     try:
-        file_path = download_video(url)
+        video = download_video(url)
 
-        if not file_path:
-            await message.answer("❌ Video topilmadi")
-            return
+        user_files[msg.from_user.id] = video
 
-        await message.answer_video(
-            FSInputFile(file_path),
-            caption="✅ Tayyor video (MP4 + audio)"
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton("🎵 MP3 olish", callback_data="mp3")]
+        ])
+
+        await msg.answer_video(
+            FSInputFile(video),
+            caption="✅ MP4 tayyor",
+            reply_markup=kb
         )
-
-        os.remove(file_path)
 
     except Exception as e:
         logging.error(e)
-        await message.answer("❌ Yuklab bo‘lmadi")
+        await msg.answer("❌ Yuklab bo‘lmadi")
 
 
-# -----------------------
-# 🔥 MAIN
-# -----------------------
+# ---------------- MP3 ----------------
+@dp.callback_query(F.data == "mp3")
+async def mp3(cb: types.CallbackQuery):
+    uid = cb.from_user.id
+
+    if uid not in user_files:
+        await cb.answer("❌ Avval video yuboring", show_alert=True)
+        return
+
+    video_path = user_files[uid]
+
+    await cb.message.answer("🎵 MP3 tayyorlanmoqda...")
+
+    try:
+        audio_path = extract_audio(video_path)
+
+        await cb.message.answer_audio(
+            FSInputFile(audio_path),
+            caption="🎧 Faqat musiqa"
+        )
+
+    except Exception as e:
+        logging.error(e)
+        await cb.message.answer("❌ MP3 qilib bo‘lmadi")
+
+
+# ---------------- MAIN ----------------
 async def main():
-    logging.info("Bot ishga tushdi...")
-
-    await bot.delete_webhook(drop_pending_updates=True)
+    logging.info("Bot ishga tushdi")
     await dp.start_polling(bot)
 
 
