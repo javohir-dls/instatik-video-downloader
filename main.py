@@ -7,26 +7,26 @@ from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 TOKEN = os.getenv("BOT_TOKEN")
-
 CHANNEL = "@xushboqovblog"
 
 logging.basicConfig(level=logging.INFO)
+
+# ⚠️ TOKEN yo‘qligini tekshirish (MUHIM)
+if not TOKEN:
+    raise ValueError("BOT_TOKEN environment variable topilmadi!")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-# kanalni tekshirish funksiyasi
 async def is_subscribed(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
-        status = member.status
-        return status in ["member", "administrator", "creator"]
+        return member.status in ["member", "administrator", "creator"]
     except:
         return False
 
 
-# obuna tugmasi
 def subscribe_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -46,13 +46,10 @@ def subscribe_keyboard():
     )
 
 
-# social media tugmalar
 def social_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📸 Instagram", url="https://instagram.com/javohir.ftbl"),
-            ],
+            [InlineKeyboardButton(text="📸 Instagram", url="https://instagram.com/javohir.ftbl")],
             [
                 InlineKeyboardButton(text="🎵 TikTok", url="https://tiktok.com"),
                 InlineKeyboardButton(text="▶️ YouTube", url="https://youtube.com"),
@@ -97,6 +94,10 @@ async def check_subscription(callback: types.CallbackQuery):
 
 async def main():
     logging.info("Bot ishga tushdi...")
+
+    # 🔥 MUHIM FIX (Telegram conflict yechimi)
+    await bot.delete_webhook(drop_pending_updates=True)
+
     await dp.start_polling(bot)
 
 
