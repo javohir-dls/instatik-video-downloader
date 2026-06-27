@@ -4,7 +4,9 @@ import os
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+
+import yt_dlp
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL = "@xushboqovblog"
@@ -18,7 +20,9 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-# 🔥 kanal tekshirish
+# ----------------------------
+# 🔥 OBUNA TEKSHIRISH
+# ----------------------------
 async def is_subscribed(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
@@ -27,7 +31,9 @@ async def is_subscribed(user_id: int) -> bool:
         return False
 
 
-# 🔥 subscribe keyboard
+# ----------------------------
+# 🔥 OBUNA KEYBOARD
+# ----------------------------
 def subscribe_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -53,24 +59,9 @@ def subscribe_keyboard():
     )
 
 
-# 🔥 video / social keyboard
-def social_keyboard():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="📸 Instagram", url="https://instagram.com/javohir.ftbl")],
-            [
-                InlineKeyboardButton(text="🎵 TikTok", url="https://tiktok.com"),
-                InlineKeyboardButton(text="▶️ YouTube", url="https://youtube.com"),
-            ],
-            [
-                InlineKeyboardButton(text="👻 Snapchat", url="https://snapchat.com"),
-                InlineKeyboardButton(text="📘 Facebook", url="https://facebook.com"),
-            ]
-        ]
-    )
-
-
-# 🔥 start
+# ----------------------------
+# 🔥 START
+# ----------------------------
 @dp.message(CommandStart())
 async def start(message: types.Message):
     user_id = message.from_user.id
@@ -79,8 +70,7 @@ async def start(message: types.Message):
         await message.answer(
             "👋 Salom!\n\n"
             "Botdan foydalanish uchun obuna bo‘ling:\n\n"
-            "📢 Telegram kanal\n"
-            "📸 Instagram\n\n"
+            "📢 Telegram kanal\n📸 Instagram\n\n"
             "Keyin 🔄 Tekshirish bosing.",
             reply_markup=subscribe_keyboard()
         )
@@ -88,37 +78,72 @@ async def start(message: types.Message):
 
     await message.answer(
         "✅ Obuna tasdiqlandi!\n\n"
-        "🎬 Endi video havola yuboring:"
+        "📎 Endi video link yuboring (Instagram / TikTok / YouTube)"
     )
 
 
-# 🔥 check subscription
+# ----------------------------
+# 🔥 CHECK SUB
+# ----------------------------
 @dp.callback_query(lambda c: c.data == "check_sub")
-async def check_subscription(callback: types.CallbackQuery):
+async def check_sub(callback: types.CallbackQuery):
     user_id = callback.from_user.id
 
     if await is_subscribed(user_id):
         await callback.message.edit_text(
-            "✅ Tasdiqlandingiz!\n\n🎬 Endi video link yuboring."
+            "✅ Tasdiqlandingiz!\n\n📎 Endi video link yuboring"
         )
     else:
-        await callback.answer(
-            "❌ Avval kanalga obuna bo‘ling!",
-            show_alert=True
-        )
+        await callback.answer("❌ Avval obuna bo‘ling!", show_alert=True)
 
 
-# 🔥 video handler
+# ----------------------------
+# 🔥 VIDEO DOWNLOAD FUNCTION
+# ----------------------------
+def download_video(url: str):
+    ydl_opts = {
+        "outtmpl": "video.mp4",
+        "format": "mp4/best",
+        "quiet": True,
+        "noplaylist": True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    return "video.mp4"
+
+
+# ----------------------------
+# 🔥 VIDEO HANDLER
+# ----------------------------
 @dp.message()
-async def video_handler(message: types.Message):
-    if "http" in (message.text or ""):
-        await message.answer(
-            "🎬 Video qabul qilindi!\n\n"
-            f"📎 Link: {message.text}"
+async def handle_video(message: types.Message):
+    url = message.text
+
+    if not url or "http" not in url:
+        return
+
+    await message.answer("⬇️ Video yuklanmoqda...")
+
+    try:
+        file_path = download_video(url)
+
+        await message.answer_video(
+            FSInputFile(file_path),
+            caption="✅ Tayyor!"
         )
 
+        os.remove(file_path)
 
-# 🔥 main
+    except Exception as e:
+        await message.answer("❌ Bu linkdan video yuklab bo‘lmadi")
+        logging.error(e)
+
+
+# ----------------------------
+# 🔥 MAIN
+# ----------------------------
 async def main():
     logging.info("Bot ishga tushdi...")
 
