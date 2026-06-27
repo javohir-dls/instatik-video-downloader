@@ -1,4 +1,1 @@
-python-telegram-bot==21.6
-yt-dlp
-aiohttp
-python-dotenv
+python-telegram-bot==13.15
