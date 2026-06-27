@@ -20,9 +20,9 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-# ----------------------------
+# -------------------------
 # 🔥 OBUNA TEKSHIRISH
-# ----------------------------
+# -------------------------
 async def is_subscribed(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
@@ -31,9 +31,9 @@ async def is_subscribed(user_id: int) -> bool:
         return False
 
 
-# ----------------------------
-# 🔥 OBUNA KEYBOARD
-# ----------------------------
+# -------------------------
+# 🔥 OBUNA BUTTON
+# -------------------------
 def subscribe_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -59,9 +59,9 @@ def subscribe_keyboard():
     )
 
 
-# ----------------------------
+# -------------------------
 # 🔥 START
-# ----------------------------
+# -------------------------
 @dp.message(CommandStart())
 async def start(message: types.Message):
     user_id = message.from_user.id
@@ -69,7 +69,7 @@ async def start(message: types.Message):
     if not await is_subscribed(user_id):
         await message.answer(
             "👋 Salom!\n\n"
-            "Botdan foydalanish uchun obuna bo‘ling:\n\n"
+            "Botdan foydalanish uchun obuna bo‘ling:\n"
             "📢 Telegram kanal\n📸 Instagram\n\n"
             "Keyin 🔄 Tekshirish bosing.",
             reply_markup=subscribe_keyboard()
@@ -77,19 +77,16 @@ async def start(message: types.Message):
         return
 
     await message.answer(
-        "✅ Obuna tasdiqlandi!\n\n"
-        "📎 Endi video link yuboring (Instagram / TikTok / YouTube)"
+        "✅ Obuna tasdiqlandi!\n\n📎 Video link yuboring (YouTube / TikTok / Instagram)"
     )
 
 
-# ----------------------------
+# -------------------------
 # 🔥 CHECK SUB
-# ----------------------------
+# -------------------------
 @dp.callback_query(lambda c: c.data == "check_sub")
 async def check_sub(callback: types.CallbackQuery):
-    user_id = callback.from_user.id
-
-    if await is_subscribed(user_id):
+    if await is_subscribed(callback.from_user.id):
         await callback.message.edit_text(
             "✅ Tasdiqlandingiz!\n\n📎 Endi video link yuboring"
         )
@@ -97,26 +94,33 @@ async def check_sub(callback: types.CallbackQuery):
         await callback.answer("❌ Avval obuna bo‘ling!", show_alert=True)
 
 
-# ----------------------------
-# 🔥 VIDEO DOWNLOAD FUNCTION
-# ----------------------------
+# -------------------------
+# 🔥 VIDEO DOWNLOAD
+# -------------------------
 def download_video(url: str):
+    os.makedirs("downloads", exist_ok=True)
+
     ydl_opts = {
-        "outtmpl": "video.mp4",
-        "format": "mp4/best",
+        "format": "bv*+ba/best",   # video + audio
+        "merge_output_format": "mp4",
+        "outtmpl": "downloads/%(title)s.%(ext)s",
         "quiet": True,
         "noplaylist": True
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        info = ydl.extract_info(url, download=True)
+        file_path = ydl.prepare_filename(info)
 
-    return "video.mp4"
+        if not file_path.endswith(".mp4"):
+            file_path = file_path.rsplit(".", 1)[0] + ".mp4"
+
+    return file_path
 
 
-# ----------------------------
+# -------------------------
 # 🔥 VIDEO HANDLER
-# ----------------------------
+# -------------------------
 @dp.message()
 async def handle_video(message: types.Message):
     url = message.text
@@ -124,26 +128,26 @@ async def handle_video(message: types.Message):
     if not url or "http" not in url:
         return
 
-    await message.answer("⬇️ Video yuklanmoqda...")
+    await message.answer("⬇️ Video yuklanmoqda...\n🎧 Audio qo‘shilmoqda...")
 
     try:
         file_path = download_video(url)
 
         await message.answer_video(
             FSInputFile(file_path),
-            caption="✅ Tayyor!"
+            caption="✅ Tayyor! Video + Audio"
         )
 
         os.remove(file_path)
 
     except Exception as e:
-        await message.answer("❌ Bu linkdan video yuklab bo‘lmadi")
         logging.error(e)
+        await message.answer("❌ Bu linkdan video yuklab bo‘lmadi")
 
 
-# ----------------------------
+# -------------------------
 # 🔥 MAIN
-# ----------------------------
+# -------------------------
 async def main():
     logging.info("Bot ishga tushdi...")
 
