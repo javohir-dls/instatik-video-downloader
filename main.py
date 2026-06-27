@@ -15,11 +15,10 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# saqlangan video path
-user_files = {}
+user_data = {}
 
 
-# ---------------- OBUNA ----------------
+# ---------------- CHECK SUB ----------------
 async def is_subscribed(user_id: int):
     try:
         member = await bot.get_chat_member(CHANNEL, user_id)
@@ -28,15 +27,16 @@ async def is_subscribed(user_id: int):
         return False
 
 
-def sub_kb():
+# ---------------- START KEYBOARD ----------------
+def start_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton("📢 Kanal", url="https://t.me/xushboqovblog")],
+        [InlineKeyboardButton("📢 Telegram kanal", url="https://t.me/xushboqovblog")],
         [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/javohir.ftbl")],
         [InlineKeyboardButton("🔄 Tekshirish", callback_data="check")]
     ])
 
 
-# ---------------- DOWNLOAD ----------------
+# ---------------- DOWNLOAD VIDEO ----------------
 def download_video(url: str):
     os.makedirs("downloads", exist_ok=True)
 
@@ -55,53 +55,58 @@ def download_video(url: str):
     return file_path
 
 
+# ---------------- MP3 EXTRACT ----------------
 def extract_audio(video_path: str):
-    audio_path = video_path.replace(".mp4", ".mp3")
-
+    audio_path = video_path.rsplit(".", 1)[0] + ".mp3"
     os.system(f'ffmpeg -y -i "{video_path}" -q:a 0 -map a "{audio_path}"')
-
     return audio_path
 
 
 # ---------------- START ----------------
 @dp.message(CommandStart())
-async def start(msg: types.Message):
-    if not await is_subscribed(msg.from_user.id):
-        await msg.answer("📢 Avval obuna bo‘ling", reply_markup=sub_kb())
+async def start(message: types.Message):
+
+    if not await is_subscribed(message.from_user.id):
+        await message.answer(
+            "👋 Salom!\n\n📢 Botdan foydalanish uchun obuna bo‘ling:",
+            reply_markup=start_kb()
+        )
         return
 
-    await msg.answer("📎 Video link yuboring")
+    await message.answer("📎 Video link yuboring")
 
 
-# ---------------- CHECK ----------------
+# ---------------- CHECK BUTTON ----------------
 @dp.callback_query(F.data == "check")
-async def check(cb: types.CallbackQuery):
-    if await is_subscribed(cb.from_user.id):
-        await cb.message.edit_text("📎 Endi link yuboring")
+async def check(call: types.CallbackQuery):
+
+    if await is_subscribed(call.from_user.id):
+        await call.message.edit_text("📎 Endi video link yuboring")
     else:
-        await cb.answer("❌ Obuna yo‘q", show_alert=True)
+        await call.answer("❌ Avval obuna bo‘ling", show_alert=True)
 
 
-# ---------------- VIDEO ----------------
+# ---------------- HANDLE VIDEO LINK ----------------
 @dp.message(F.text)
-async def handle(msg: types.Message):
-    url = msg.text
+async def handle(message: types.Message):
+
+    url = message.text
 
     if "http" not in url:
         return
 
-    await msg.answer("⬇️ Yuklanmoqda...")
+    await message.answer("⬇️ Video yuklanmoqda...")
 
     try:
         video = download_video(url)
 
-        user_files[msg.from_user.id] = video
+        user_data[message.from_user.id] = video
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton("🎵 MP3 olish", callback_data="mp3")]
         ])
 
-        await msg.answer_video(
+        await message.answer_video(
             FSInputFile(video),
             caption="✅ MP4 tayyor",
             reply_markup=kb
@@ -109,38 +114,39 @@ async def handle(msg: types.Message):
 
     except Exception as e:
         logging.error(e)
-        await msg.answer("❌ Yuklab bo‘lmadi")
+        await message.answer("❌ Yuklab bo‘lmadi")
 
 
-# ---------------- MP3 ----------------
+# ---------------- MP3 BUTTON ----------------
 @dp.callback_query(F.data == "mp3")
-async def mp3(cb: types.CallbackQuery):
-    uid = cb.from_user.id
+async def mp3(call: types.CallbackQuery):
 
-    if uid not in user_files:
-        await cb.answer("❌ Avval video yuboring", show_alert=True)
+    uid = call.from_user.id
+
+    if uid not in user_data:
+        await call.answer("❌ Avval video yuboring", show_alert=True)
         return
 
-    video_path = user_files[uid]
+    video_path = user_data[uid]
 
-    await cb.message.answer("🎵 MP3 tayyorlanmoqda...")
+    await call.message.answer("🎵 MP3 tayyorlanmoqda...")
 
     try:
-        audio_path = extract_audio(video_path)
+        audio = extract_audio(video_path)
 
-        await cb.message.answer_audio(
-            FSInputFile(audio_path),
-            caption="🎧 Faqat musiqa"
+        await call.message.answer_audio(
+            FSInputFile(audio),
+            caption="🎧 Musiqa"
         )
 
     except Exception as e:
         logging.error(e)
-        await cb.message.answer("❌ MP3 qilib bo‘lmadi")
+        await call.message.answer("❌ MP3 qilib bo‘lmadi")
 
 
 # ---------------- MAIN ----------------
 async def main():
-    logging.info("Bot ishga tushdi")
+    logging.info("Bot ishga tushdi...")
     await dp.start_polling(bot)
 
 
