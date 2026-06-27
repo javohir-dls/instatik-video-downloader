@@ -1,3 +1,4 @@
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from config import BOT_TOKEN
@@ -18,6 +19,10 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download))
 
     print("Bot started")
+
+    # 🔥 CRITICAL FIX FOR RENDER + PYTHON 3.14
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     app.run_polling()
 
 if __name__ == "__main__":
