@@ -1,9 +1,14 @@
-BOT_TOKEN = "8787348134:AAFNAot8sCUcXfvibh-4kDrHjzRAWu2u5jQ"
+import os
 
-INSTAGRAM_URL = "https://instagram.com/javohir.ftbl"
+# Bot token (Render ENV dan olinadi)
+BOT_TOKEN = os.getenv("8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM")
 
-CAPTION = """
-✅ Video muvaffaqiyatli yuklandi!
+# Majburiy obuna kanal
+CHANNEL = "@xushboqovblog"
 
-📢 @javohir.ftbl ga obuna bo'ling.
-"""
+# Social links
+INSTAGRAM = "https://instagram.com/javohir.ftbl"
+TIKTOK = "https://tiktok.com"
+YOUTUBE = "https://youtube.com"
+SNAPCHAT = "https://snapchat.com"
+FACEBOOK = "https://facebook.com"
