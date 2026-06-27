@@ -1,43 +1,24 @@
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+print("SCRIPT STARTED")
+
+from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from config import BOT_TOKEN
+BOT_TOKEN = os.getenv("8787348134:AAFNAot8sCUcXfvibh-4kDrHjzRAWu2u5jQ")
 
+print("TOKEN =", BOT_TOKEN)
 
-# 🚀 START
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("START TRIGGERED")
+    await update.message.reply_text("OK ISHLAYAPTI")
 
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "📢 Instagramga obuna bo‘lish",
-                url="https://instagram.com/javohir.ftbl"
-            )
-        ]
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        "🤖 Javohirbekning InstaTik Video Downloader boti ishlayapti ✅\n\n"
-        "📌 Bot hozir faol holatda\n"
-        "📥 Video yuklash funksiyasi tez orada qo‘shiladi\n\n"
-        "👉 Davom etish uchun Instagramga obuna bo‘ling",
-        reply_markup=reply_markup
-    )
-
-
-# 🔥 MAIN
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+    print("BOT STARTING...")
 
+    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
 
-    print("Bot ishlayapti...")
-
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
