@@ -1,4 +1,2 @@
-import os
-
-TOKEN = os.getenv("8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM")
+TOKEN = "8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM"
 CHANNEL = "@xushboqovblog"
