@@ -1,7 +1,5 @@
-import os
+BOT_TOKEN = "8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM"
 
-TOKEN = os.getenv("8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM")
+CHANNEL_ID = "@xushboqovblog"
 
-CHANNEL = "@xushboqovblog"
-
-INSTAGRAM = "https://instagram.com/javohir.ftbl"
+INSTAGRAM_URL = "https://instagram.com/javohir.ftbl"
