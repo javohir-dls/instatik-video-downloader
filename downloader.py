@@ -1,38 +1,37 @@
 import os
+import uuid
 import yt_dlp
 
+DOWNLOAD_DIR = "downloads"
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-def download_video(url):
-    os.makedirs("downloads", exist_ok=True)
 
-    ydl_opts = {
-        "format": "best",
-        "outtmpl": "downloads/%(title).80s.%(ext)s",
-        "noplaylist": True,
-        "quiet": False,
-        "no_warnings": False
-    }
+def download_video(url: str, audio=False):
+    file_id = str(uuid.uuid4())[:8]
+    output = f"{DOWNLOAD_DIR}/{file_id}.%(ext)s"
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
+    ydl_opts = {"outtmpl": output}
 
-            if info is None:
-                return None
+    if audio:
+        ydl_opts.update({
+            "format": "bestaudio/best",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
+        })
+    else:
+        ydl_opts.update({
+            "format": "bestvideo+bestaudio/best",
+            "merge_output_format": "mp4",
+        })
 
-            filename = ydl.prepare_filename(info)
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        path = ydl.prepare_filename(info)
 
-            base = os.path.splitext(filename)[0]
+    if audio:
+        path = path.rsplit(".", 1)[0] + ".mp3"
 
-            for ext in [".mp4", ".mkv", ".webm", ".mov"]:
-                if os.path.exists(base + ext):
-                    return base + ext
-
-            if os.path.exists(filename):
-                return filename
-
-            return None
-
-    except Exception as e:
-        print("DOWNLOAD ERROR:", e)
-        return None
+    return path
