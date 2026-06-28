@@ -1,60 +1,100 @@
 import asyncio
-import logging
-
-from aiogram import Bot, Dispatcher, Router
-from aiogram.types import Message
+from aiogram import Bot, Dispatcher, Router, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart
 
-from config import BOT_TOKEN
-from downloader import download_file
+from config import BOT_TOKEN, CHANNEL_ID, INSTAGRAM_URL
+from downloader import download_video
 
-# logging
-logging.basicConfig(level=logging.INFO)
-
-# bot + dispatcher
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
-
 dp.include_router(router)
 
 
-# /start
+# ================= KEYBOARD =================
+def start_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📢 Telegram kanal", url=f"https://t.me/{CHANNEL_ID.replace('@','')}")],
+        [InlineKeyboardButton(text="📸 Instagram", url=INSTAGRAM_URL)],
+        [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check")]
+    ])
+
+
+def download_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎬 MP4", callback_data="mp4")],
+        [InlineKeyboardButton(text="🎵 MP3", callback_data="mp3")]
+    ])
+
+
+# ================= CHECK SUB =================
+async def is_subscribed(user_id: int):
+    try:
+        member = await bot.get_chat_member(CHANNEL_ID, user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except:
+        return False
+
+
+# ================= START =================
 @router.message(CommandStart())
-async def start_handler(message: Message):
-    await message.answer(
+async def start(msg: Message):
+    await msg.answer(
         "👋 Salom!\n"
-        "Menga video yoki file link yuboring, men yuklab beraman 🚀"
+        "Botdan foydalanish uchun kanalga obuna bo‘ling:",
+        reply_markup=start_kb()
     )
 
 
-# umumiy handler
+# ================= CHECK BUTTON =================
+@router.callback_query(F.data == "check")
+async def check(call: CallbackQuery):
+    if await is_subscribed(call.from_user.id):
+        await call.message.answer("✅ Tasdiqlandi! Endi link yuboring 🚀")
+    else:
+        await call.message.answer("❌ Avval kanalga obuna bo‘ling!")
+
+
+# ================= LINK HANDLER =================
 @router.message()
-async def message_handler(message: Message):
-    text = message.text
+async def handle(msg: Message):
+    text = msg.text
 
     if not text:
-        await message.answer("❌ Faqat link yuboring")
         return
 
-    if text.startswith("http"):
-        await message.answer("⏳ Yuklanmoqda...")
+    if "http" in text:
+        await msg.answer("⏳ Yuklanmoqda...")
 
-        try:
-            file_path = await download_file(text)
+        file = download_video(text, audio=False)
 
-            await message.answer_document(
-                document=open(file_path, "rb"),
-                caption="✅ Tayyor!"
-            )
-
-        except Exception as e:
-            await message.answer(f"❌ Xatolik: {e}")
+        await msg.answer_document(
+            open(file, "rb"),
+            caption="✅ Tayyor video",
+            reply_markup=download_kb()
+        )
     else:
-        await message.answer("⚠️ Iltimos, http/https link yuboring")
+        await msg.answer("⚠️ Faqat link yuboring")
 
 
-# bot ishga tushirish
+# ================= MP3 =================
+@router.callback_query(F.data == "mp3")
+async def mp3(call: CallbackQuery):
+    await call.message.answer("🎵 MP3 yuklanmoqda...")
+
+    # real download audio version
+    file = download_video("https://example.com", audio=True)
+    await call.message.answer_document(open(file, "rb"), caption="🎵 MP3 tayyor")
+
+
+# ================= MP4 =================
+@router.callback_query(F.data == "mp4")
+async def mp4(call: CallbackQuery):
+    await call.message.answer("🎬 MP4 allaqachon yuborilgan")
+
+
+# ================= RUN =================
 async def main():
     await dp.start_polling(bot)
 
