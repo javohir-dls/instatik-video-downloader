@@ -6,33 +6,28 @@ DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
-def download_video(url: str, audio=False):
+def download_video(url: str):
     file_id = str(uuid.uuid4())[:8]
     output = f"{DOWNLOAD_DIR}/{file_id}.%(ext)s"
 
     ydl_opts = {
         "outtmpl": output,
+        "format": "best[ext=mp4]/best",
+        "merge_output_format": "mp4",
         "quiet": True,
         "no_warnings": True,
+        "noplaylist": True,
+        "socket_timeout": 30,
+        "retries": 3,
     }
-
-    if audio:
-        ydl_opts.update({
-            "format": "bestaudio/best",
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }],
-        })
-    else:
-        ydl_opts.update({
-            "format": "best[ext=mp4]",
-            "merge_output_format": "mp4",
-        })
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
+
         filename = ydl.prepare_filename(info)
+
+        # ba’zan extension o‘zgaradi, shuni fix qilamiz
+        if not filename.endswith(".mp4"):
+            filename = filename.rsplit(".", 1)[0] + ".mp4"
 
     return filename
