@@ -1,2 +1,7 @@
-TOKEN = "8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM"
+import os
+
+TOKEN = os.getenv("8787348134:AAHIEBQ7VHZHDt80lw2SPAkhotuQpmy8eHM")
+
 CHANNEL = "@xushboqovblog"
+
+INSTAGRAM = "https://instagram.com/javohir.ftbl"
