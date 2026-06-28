@@ -1,94 +1,61 @@
 import asyncio
 import logging
-import os
 
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, Router
+from aiogram.types import Message
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 
-from downloader import download_video
-from config import TOKEN, CHANNEL
+from config import BOT_TOKEN
+from downloader import download_file
 
+# logging
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=TOKEN)
+# bot + dispatcher
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+router = Router()
+
+dp.include_router(router)
 
 
-# ---------------- OBUNA ----------------
-async def is_subscribed(user_id: int):
-    try:
-        member = await bot.get_chat_member(CHANNEL, user_id)
-        return member.status in ["member", "administrator", "creator"]
-    except:
-        return False
+# /start
+@router.message(CommandStart())
+async def start_handler(message: Message):
+    await message.answer(
+        "👋 Salom!\n"
+        "Menga video yoki file link yuboring, men yuklab beraman 🚀"
+    )
 
 
-def sub_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton("📢 Telegram", url=f"https://t.me/{CHANNEL.replace('@','')}")],
-        [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/javohir.ftbl")],
-        [InlineKeyboardButton("🔄 Tekshirish", callback_data="check")]
-    ])
+# umumiy handler
+@router.message()
+async def message_handler(message: Message):
+    text = message.text
 
-
-# ---------------- START ----------------
-@dp.message(CommandStart())
-async def start(message: types.Message):
-
-    if not await is_subscribed(message.from_user.id):
-        await message.answer(
-            "📢 Avval obuna bo‘ling:",
-            reply_markup=sub_keyboard()
-        )
+    if not text:
+        await message.answer("❌ Faqat link yuboring")
         return
 
-    await message.answer("📎 Video link yuboring")
+    if text.startswith("http"):
+        await message.answer("⏳ Yuklanmoqda...")
 
+        try:
+            file_path = await download_file(text)
 
-# ---------------- CHECK ----------------
-@dp.callback_query(F.data == "check")
-async def check(call: types.CallbackQuery):
+            await message.answer_document(
+                document=open(file_path, "rb"),
+                caption="✅ Tayyor!"
+            )
 
-    if await is_subscribed(call.from_user.id):
-        await call.message.edit_text("📎 Endi video link yuboring")
+        except Exception as e:
+            await message.answer(f"❌ Xatolik: {e}")
     else:
-        await call.answer("❌ Obuna yo‘q", show_alert=True)
+        await message.answer("⚠️ Iltimos, http/https link yuboring")
 
 
-# ---------------- VIDEO HANDLER ----------------
-@dp.message(F.text)
-async def handle(message: types.Message):
-
-    url = message.text
-
-    if "http" not in url:
-        return
-
-    await message.answer("⬇️ Yuklanmoqda...")
-
-    try:
-        file_path = download_video(url)
-
-        if not file_path:
-            await message.answer("❌ Video topilmadi")
-            return
-
-        await message.answer_video(
-            FSInputFile(file_path),
-            caption="✅ MP4 tayyor"
-        )
-
-        os.remove(file_path)
-
-    except Exception as e:
-        logging.exception(e)
-        await message.answer("❌ Yuklab bo‘lmadi")
-
-
-# ---------------- MAIN ----------------
+# bot ishga tushirish
 async def main():
-    logging.info("Bot ishga tushdi...")
     await dp.start_polling(bot)
 
 
