@@ -28,7 +28,7 @@ def result_kb():
     ])
 
 
-# ================= SUB CHECK =================
+# ================= CHECK SUB =================
 async def is_subscribed(user_id: int):
     try:
         member = await bot.get_chat_member(CHANNEL_ID, user_id)
@@ -68,7 +68,7 @@ async def handle(msg: Message):
         await msg.answer("⏳ Yuklanmoqda...")
 
         try:
-            # 🔥 SAFE DOWNLOAD (no freeze)
+            # 🔥 FIXED: faqat 1 argument
             file_path = await asyncio.wait_for(
                 asyncio.to_thread(download_video, text),
                 timeout=90
@@ -84,7 +84,7 @@ async def handle(msg: Message):
         except asyncio.TimeoutError:
             await msg.answer("❌ Download juda uzoq davom etdi")
         except Exception as e:
-            await msg.answer(f"❌ Xatolik: {str(e)}")
+            await msg.answer(f"❌ Xatolik: {e}")
 
     else:
         await msg.answer("⚠️ Faqat link yuboring")
@@ -93,7 +93,7 @@ async def handle(msg: Message):
 # ================= MP3 =================
 @router.callback_query(F.data == "mp3")
 async def mp3(call: CallbackQuery):
-    await call.message.answer("🎵 MP3 hali ulanmagan (keyingi update)")
+    await call.message.answer("🎵 MP3 keyingi update da ulanadi")
 
 
 # ================= MP4 =================
