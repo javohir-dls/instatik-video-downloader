@@ -12,22 +12,20 @@ def download_video(url: str):
 
     ydl_opts = {
         "outtmpl": output,
-        "format": "best[ext=mp4]/best",
+        "format": "bestvideo+bestaudio/best",
         "merge_output_format": "mp4",
+        "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        "noplaylist": True,
-        "socket_timeout": 30,
-        "retries": 3,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
 
-        filename = ydl.prepare_filename(info)
+        # REAL file path
+        file_path = ydl.prepare_filename(info)
 
-        # ba’zan extension o‘zgaradi, shuni fix qilamiz
-        if not filename.endswith(".mp4"):
-            filename = filename.rsplit(".", 1)[0] + ".mp4"
+        # FIX: always mp4
+        file_path = file_path.rsplit(".", 1)[0] + ".mp4"
 
-    return filename
+    return file_path
