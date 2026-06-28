@@ -56,7 +56,7 @@ async def check(call: CallbackQuery):
         await call.message.answer("❌ Avval kanalga obuna bo‘ling!")
 
 
-# ================= LINK HANDLER =================
+# ================= LINK HANDLER (FIXED) =================
 @router.message()
 async def handle(msg: Message):
     text = msg.text
@@ -68,8 +68,11 @@ async def handle(msg: Message):
         await msg.answer("⏳ Yuklanmoqda...")
 
         try:
-            # 🔥 IMPORTANT FIX: blocking emas
-            file_path = await asyncio.to_thread(download_video, text, False)
+            # 🔥 SAFE DOWNLOAD (osilib qolmaydi)
+            file_path = await asyncio.wait_for(
+                asyncio.to_thread(download_video, text),
+                timeout=60
+            )
 
             with open(file_path, "rb") as video:
                 await msg.answer_document(
@@ -78,6 +81,8 @@ async def handle(msg: Message):
                     reply_markup=download_kb()
                 )
 
+        except asyncio.TimeoutError:
+            await msg.answer("❌ Download juda uzoq davom etdi")
         except Exception as e:
             await msg.answer(f"❌ Xatolik: {e}")
 
