@@ -12,31 +12,19 @@ def download_video(url: str):
 
     ydl_opts = {
         "outtmpl": output,
-        "format": "worst[ext=mp4]/best[ext=mp4]/best",
+        "format": "best[ext=mp4]/best",
+        "merge_output_format": "mp4",
         "noplaylist": True,
-
-        # 🔥 MUHIM FIXLAR
         "quiet": True,
         "no_warnings": True,
-        "socket_timeout": 15,
-        "retries": 1,
-        "fragment_retries": 1,
-        "concurrent_fragment_downloads": 1,
-
-        # 🔥 YouTube freeze oldini olish
-        "extractor_args": {
-            "youtube": {
-                "skip": ["dash", "hls"]
-            }
-        }
+        "socket_timeout": 30,
+        "retries": 2,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-
         filename = ydl.prepare_filename(info)
 
-        # always mp4
         if not filename.endswith(".mp4"):
             filename = filename.rsplit(".", 1)[0] + ".mp4"
 
