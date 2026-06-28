@@ -10,7 +10,11 @@ def download_video(url: str, audio=False):
     file_id = str(uuid.uuid4())[:8]
     output = f"{DOWNLOAD_DIR}/{file_id}.%(ext)s"
 
-    ydl_opts = {"outtmpl": output}
+    ydl_opts = {
+        "outtmpl": output,
+        "quiet": True,
+        "no_warnings": True,
+    }
 
     if audio:
         ydl_opts.update({
@@ -23,15 +27,12 @@ def download_video(url: str, audio=False):
         })
     else:
         ydl_opts.update({
-            "format": "bestvideo+bestaudio/best",
+            "format": "best[ext=mp4]",
             "merge_output_format": "mp4",
         })
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        path = ydl.prepare_filename(info)
+        filename = ydl.prepare_filename(info)
 
-    if audio:
-        path = path.rsplit(".", 1)[0] + ".mp3"
-
-    return path
+    return filename
